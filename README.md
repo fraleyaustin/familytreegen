@@ -5,13 +5,20 @@ A web application for creating and managing family trees with a visual Visio-lik
 ## Features
 
 - 🌳 **Visual Tree Editor**: Drag-and-drop interface powered by Konva.js
-- 👤 **Person Cards**: Add family members with photos and names
+- 👤 **Person Cards**: Add family members with detailed information
+  - Photos with proper aspect ratio preservation
+  - Birth date and location
+  - Death date and burial location
 - ↔️ **Relationships**: Connect people with visual lines
-- ❤️ **Decorations**: Add hearts, notes, and other decorative elements
+  - Solid and dashed line styles
+  - Smart T-junction connections for multiple parents
+- 🎨 **Decorations**: 70+ emojis and resizable text notes
+- 🌙 **Dark Mode**: Toggle between light and dark themes
+- 🔍 **Zoom & Pan**: Mouse wheel zoom and canvas panning
 - 💾 **Persistent Storage**: SQLite database for reliable data storage
 - 📸 **Photo Uploads**: Upload and display photos for each person
-- 🔄 **Auto-Save**: Automatic saving every 15 seconds
-- 📱 **Responsive UI**: Clean, modern interface
+- 🔄 **Smart Auto-Save**: Debounced auto-save (saves 2 seconds after changes stop)
+- 📱 **Responsive UI**: Clean, modern interface with sidebar and properties panel
 
 ## Tech Stack
 
@@ -115,28 +122,44 @@ python -m flask --app app run --debug --host 0.0.0.0 --port 5000
 2. A new person card will appear on the canvas
 3. Drag it to the desired position
 4. Click the card to select it
-5. In the right panel, edit the person's name
-6. Click **"Upload Photo"** to add a photo
+5. In the right panel, edit the person's details:
+   - Name
+   - Birth date and birth location
+   - Death date and burial location
+6. Click **"Upload Photo"** to add a photo (automatically preserves aspect ratio)
 
 ### Connecting People
 
 1. Click **"↔️ Add Line"** button (it will highlight)
-2. Click the first person
-3. Click the second person
-4. A line will be drawn connecting them
-5. The line mode automatically turns off
+2. Select line style (Solid or Dashed) from dropdown
+3. Click the first person
+4. Click the second person
+5. A line will be drawn connecting them
+6. Multiple parents connecting to one child automatically create T-junction connectors
 
 ### Adding Decorations
 
-- Click **"❤️ Add Heart"** to add a heart decoration
-- Click **"📝 Add Note"** to add a text note
-- Drag decorations to reposition them
-- Click to select and edit properties
+- Click **"😊 Add Emoji"** to open emoji picker with 70+ options (hearts, family symbols, celebrations, religious symbols, etc.)
+- Click **"📝 Add Note"** to add a resizable text note
+  - Drag the note to reposition
+  - Drag the bottom-right corner handle to resize
+  - Click to select and edit text in properties panel
+
+### Zoom & Pan
+
+- **Zoom**: Use mouse wheel or click zoom buttons (🔍+ / 🔍-)
+- **Pan**: Drag the canvas background
+- **Reset**: Click 🔄 Reset to return to default zoom level
+
+### Dark Mode
+
+- Click **🌙 Dark Mode** button to toggle between light and dark themes
+- Preference is saved in browser localStorage
 
 ### Saving
 
-- Click **"💾 Save"** to manually save your tree
-- The app auto-saves every 15 seconds if changes are detected
+- Auto-save activates 2 seconds after you stop making changes
+- Click **"💾 Save"** to manually save your tree immediately
 - Save status is displayed in the toolbar
 
 ### Loading Trees
@@ -217,7 +240,11 @@ Each tree's `data` field contains:
       "x": 100,
       "y": 150,
       "name": "John Doe",
-      "photo": "/uploads/tree-id/photo.jpg"
+      "photo": "/uploads/tree-id/photo.jpg",
+      "birthDate": "January 1, 1950",
+      "birthLocation": "New York, NY",
+      "deathDate": "December 31, 2020",
+      "burialLocation": "Green Lawn Cemetery"
     }
   ],
   "edges": [
@@ -225,13 +252,15 @@ Each tree's `data` field contains:
       "id": "edge_123456",
       "type": "line",
       "from": "person_123456",
-      "to": "person_789012"
+      "to": "person_789012",
+      "lineStyle": "solid"
     }
   ],
   "decorations": [
     {
-      "id": "heart_123456",
-      "type": "heart",
+      "id": "emoji_123456",
+      "type": "emoji",
+      "emoji": "❤️",
       "x": 200,
       "y": 200
     },
@@ -240,6 +269,8 @@ Each tree's `data` field contains:
       "type": "note",
       "x": 300,
       "y": 100,
+      "width": 180,
+      "height": 100,
       "text": "Note content"
     }
   ],
@@ -383,10 +414,25 @@ source ../venv/bin/activate  # On Linux/Mac
 
 ## Browser Compatibility
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+- Chrome 90+ ✅
+- Firefox 88+ ✅
+- Safari 14+ ✅
+- Edge 90+ ✅
+
+Features tested across all browsers:
+- Drag and drop functionality
+- Mouse wheel zoom
+- File uploads
+- Dark mode toggle
+- Canvas rendering with Konva.js
+
+## Performance Optimizations
+
+- **Debounced Auto-Save**: Saves only after 2 seconds of inactivity to reduce server load
+- **Batch Drawing**: Uses `batchDraw()` for efficient canvas updates during drag operations
+- **Smart Connection Updates**: Only redraws connections when nodes move, not on every pixel
+- **Cached Calculations**: Pointer positions and scales are cached to avoid redundant calculations
+- **Optimized T-Junctions**: Efficiently groups and renders multiple parent connections
 
 ## License
 

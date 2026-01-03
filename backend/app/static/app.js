@@ -9,6 +9,7 @@ class FamilyTreeApp {
         this.mode = 'select'; // select, addLine
         this.lineStartNode = null;
         this.autoSaveInterval = null;
+        this.saveTimeout = null;
         
         this.init();
     }
@@ -18,6 +19,7 @@ class FamilyTreeApp {
         this.setupEventListeners();
         this.loadTrees();
         this.startAutoSave();
+        this.loadDarkMode();
     }
     
     setupCanvas() {
@@ -86,6 +88,9 @@ class FamilyTreeApp {
         document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
         document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
         document.getElementById('resetZoomBtn').addEventListener('click', () => this.resetZoom());
+        
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => this.toggleDarkMode());
         
         // Add items
         document.getElementById('addPersonBtn').addEventListener('click', () => this.addPerson());
@@ -425,7 +430,6 @@ class FamilyTreeApp {
         
         group.on('dragmove', () => {
             this.updateConnections(group);
-            this.markUnsaved();
         });
         
         group.on('dragend', () => {
@@ -643,7 +647,7 @@ class FamilyTreeApp {
             line.moveToBottom();
         });
         
-        this.layer.draw();
+        this.layer.batchDraw();
     }
     
     createLineFromData(data) {
@@ -711,6 +715,8 @@ class FamilyTreeApp {
             type: 'note',
             x: 400 + Math.random() * 200,
             y: 100 + Math.random() * 200,
+            width: 180,
+            height: 100,
             text: 'Note text here'
         };
         
@@ -720,6 +726,10 @@ class FamilyTreeApp {
     }
     
     createNoteFromData(data) {
+        // Ensure width and height exist
+        if (!data.width) data.width = 180;
+        if (!data.height) data.height = 100;
+        
         const group = new Konva.Group({
             x: data.x,
             y: data.y,
@@ -728,31 +738,111 @@ class FamilyTreeApp {
         });
         
         const bg = new Konva.Rect({
-            width: 180,
-            height: 100,
+            width: data.width,
+            height: data.height,
             fill: '#fffacd',
             stroke: '#f0e68c',
             strokeWidth: 1,
             cornerRadius: 4,
             shadowColor: 'black',
             shadowBlur: 5,
-            shadowOpacity: 0.2
+            shadowOpacity: 0.2,
+            name: 'background'
         });
         
         const text = new Konva.Text({
             x: 10,
             y: 10,
-            width: 160,
-            height: 80,
+            width: data.width - 20,
+            height: data.height - 20,
             text: data.text || 'Note text here',
             fontSize: 14,
             fontFamily: 'Arial',
             fill: '#333',
-            wrap: 'word'
+            wrap: 'word',
+            name: 'text'
+        });
+        
+        // Resize handle (bottom-right corner)
+        const resizeHandle = new Konva.Rect({
+            x: data.width - 12,
+            y: data.height - 12,
+            width: 12,
+            height: 12,
+            fill: '#f0e68c',
+            stroke: '#d4c470',
+            strokeWidth: 1,
+            cornerRadius: 2,
+            name: 'resizeHandle',
+            draggable: false
         });
         
         group.add(bg);
         group.add(text);
+        group.add(resizeHandle);
+        
+        // Handle resize
+        let isResizing = false;
+        let startWidth, startHeight, startX, startY;
+        
+        resizeHandle.on('mousedown touchstart', (e) => {
+            e.cancelBubble = true;
+            isResizing = true;
+            group.draggable(false);
+            const pos = this.stage.getPointerPosition();
+            startX = pos.x;
+            startY = pos.y;
+            startWidth = data.width;
+            startHeight = data.height;
+        });
+        
+        this.stage.on('mousemove touchmove', () => {
+            if (isResizing && group.id() === data.id) {
+                const pos = this.stage.getPointerPosition();
+                if (!pos) return;
+                
+                const scale = this.stage.scaleX();
+                const deltaX = (pos.x - startX) / scale;
+                const deltaY = (pos.y - startY) / scale;
+                
+                const newWidth = Math.max(100, startWidth + deltaX);
+                const newHeight = Math.max(60, startHeight + deltaY);
+                
+                bg.width(newWidth);
+                bg.height(newHeight);
+                text.width(newWidth - 20);
+                text.height(newHeight - 20);
+                resizeHandle.x(newWidth - 12);
+                resizeHandle.y(newHeight - 12);
+                
+                this.layer.batchDraw();
+            }
+        });
+        
+        this.stage.on('mouseup touchend', () => {
+            if (isResizing && group.id() === data.id) {
+                isResizing = false;
+                group.draggable(true);
+                document.body.style.cursor = 'default';
+                
+                const decoration = this.currentTree.data.decorations.find(d => d.id === data.id);
+                if (decoration) {
+                    decoration.width = bg.width();
+                    decoration.height = bg.height();
+                    this.markUnsaved();
+                }
+            }
+        });
+        
+        resizeHandle.on('mouseenter', () => {
+            document.body.style.cursor = 'nwse-resize';
+        });
+        
+        resizeHandle.on('mouseleave', () => {
+            if (!isResizing) {
+                document.body.style.cursor = 'default';
+            }
+        });
         
         group.on('dragend', () => {
             const decoration = this.currentTree.data.decorations.find(d => d.id === data.id);
@@ -763,7 +853,11 @@ class FamilyTreeApp {
             }
         });
         
-        group.on('click', () => this.selectDecoration(group, data));
+        group.on('click', (e) => {
+            if (e.target.name() !== 'resizeHandle') {
+                this.selectDecoration(group, data);
+            }
+        });
         
         this.layer.add(group);
         this.layer.draw();
@@ -1219,6 +1313,16 @@ class FamilyTreeApp {
     markUnsaved() {
         this.unsavedChanges = true;
         this.updateSaveStatus('Unsaved changes');
+        
+        // Debounce: only trigger auto-save after 2 seconds of no changes
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = setTimeout(() => {
+            if (this.currentTree && this.unsavedChanges) {
+                this.saveTree();
+            }
+        }, 2000);
     }
     
     updateSaveStatus(message) {
@@ -1298,6 +1402,35 @@ class FamilyTreeApp {
         this.stage.scale({ x: 1, y: 1 });
         this.stage.position({ x: 0, y: 0 });
         this.stage.batchDraw();
+    }
+    
+    toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        
+        // Update button text
+        const btn = document.getElementById('darkModeToggle');
+        btn.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        
+        // Save preference
+        localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+        
+        // Update stage background
+        if (this.stage) {
+            this.stage.container().style.background = isDark ? '#1a1a1a' : '#fafafa';
+        }
+    }
+    
+    loadDarkMode() {
+        const darkMode = localStorage.getItem('darkMode');
+        if (darkMode === 'enabled') {
+            document.body.classList.add('dark-mode');
+            const btn = document.getElementById('darkModeToggle');
+            btn.textContent = '☀️ Light Mode';
+            if (this.stage) {
+                this.stage.container().style.background = '#1a1a1a';
+            }
+        }
     }
 }
 
