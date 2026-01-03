@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Builder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar: Tree List -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Family Trees</h2>
+                <button id="createTreeBtn" class="btn btn-primary">+ New Tree</button>
+            </div>
+            <div id="treeList" class="tree-list">
+                <!-- Tree list will be populated here -->
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button id="addPersonBtn" class="btn" title="Add Person">
+                        👤 Add Person
+                    </button>
+                    <button id="addLineBtn" class="btn" title="Connect with Line">
+                        ↔️ Add Line
+                    </button>
+                    <select id="lineStyleSelector" class="line-style-selector" title="Line Style" style="display:none;">
+                        <option value="solid">Solid</option>
+                        <option value="dashed">Dashed</option>
+                    </select>
+                    <button id="addNoteBtn" class="btn" title="Add Note">
+                        📝 Add Note
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button id="addEmojiBtn" class="btn" title="Add Emoji">
+                        😊 Add Emoji
+                    </button>
+                    <div id="emojiPicker" class="emoji-picker" style="display:none;">
+                        <span class="emoji-item" data-emoji="❤️">❤️</span>
+                        <span class="emoji-item" data-emoji="💔">💔</span>
+                        <span class="emoji-item" data-emoji="💕">💕</span>
+                        <span class="emoji-item" data-emoji="💖">💖</span>
+                        <span class="emoji-item" data-emoji="💗">💗</span>
+                        <span class="emoji-item" data-emoji="💘">💘</span>
+                        <span class="emoji-item" data-emoji="💙">💙</span>
+                        <span class="emoji-item" data-emoji="💚">💚</span>
+                        <span class="emoji-item" data-emoji="💛">💛</span>
+                        <span class="emoji-item" data-emoji="🧡">🧡</span>
+                        <span class="emoji-item" data-emoji="💜">💜</span>
+                        <span class="emoji-item" data-emoji="🖤">🖤</span>
+                        <span class="emoji-item" data-emoji="🤍">🤍</span>
+                        <span class="emoji-item" data-emoji="🤎">🤎</span>
+                        <span class="emoji-item" data-emoji="💝">💝</span>
+                        <span class="emoji-item" data-emoji="💞">💞</span>
+                        <span class="emoji-item" data-emoji="💟">💟</span>
+                        <span class="emoji-item" data-emoji="❣️">❣️</span>
+                        <span class="emoji-item" data-emoji="💌">💌</span>
+                        <span class="emoji-item" data-emoji="💋">💋</span>
+                        <span class="emoji-item" data-emoji="👪">👪</span>
+                        <span class="emoji-item" data-emoji="👨‍👩‍👧">👨‍👩‍👧</span>
+                        <span class="emoji-item" data-emoji="👨‍👩‍👧‍👦">👨‍👩‍👧‍👦</span>
+                        <span class="emoji-item" data-emoji="👶">👶</span>
+                        <span class="emoji-item" data-emoji="🍼">🍼</span>
+                        <span class="emoji-item" data-emoji="🎂">🎂</span>
+                        <span class="emoji-item" data-emoji="🎉">🎉</span>
+                        <span class="emoji-item" data-emoji="🎊">🎊</span>
+                        <span class="emoji-item" data-emoji="🎈">🎈</span>
+                        <span class="emoji-item" data-emoji="🎁">🎁</span>
+                        <span class="emoji-item" data-emoji="🏠">🏠</span>
+                        <span class="emoji-item" data-emoji="🏡">🏡</span>
+                        <span class="emoji-item" data-emoji="🌟">🌟</span>
+                        <span class="emoji-item" data-emoji="⭐">⭐</span>
+                        <span class="emoji-item" data-emoji="✨">✨</span>
+                        <span class="emoji-item" data-emoji="🌹">🌹</span>
+                        <span class="emoji-item" data-emoji="🌺">🌺</span>
+                        <span class="emoji-item" data-emoji="🌻">🌻</span>
+                        <span class="emoji-item" data-emoji="🌷">🌷</span>
+                        <span class="emoji-item" data-emoji="🌸">🌸</span>
+                        <span class="emoji-item" data-emoji="💐">💐</span>
+                        <span class="emoji-item" data-emoji="🌈">🌈</span>
+                        <span class="emoji-item" data-emoji="☀️">☀️</span>
+                        <span class="emoji-item" data-emoji="🌙">🌙</span>
+                        <span class="emoji-item" data-emoji="⛪">⛪</span>
+                        <span class="emoji-item" data-emoji="💒">💒</span>
+                        <span class="emoji-item" data-emoji="💍">💍</span>
+                        <span class="emoji-item" data-emoji="📷">📷</span>
+                        <span class="emoji-item" data-emoji="📸">📸</span>
+                        <span class="emoji-item" data-emoji="📚">📚</span>
+                        <span class="emoji-item" data-emoji="📖">📖</span>
+                        <span class="emoji-item" data-emoji="✝️">✝️</span>
+                        <span class="emoji-item" data-emoji="✡️">✡️</span>
+                        <span class="emoji-item" data-emoji="☪️">☪️</span>
+                        <span class="emoji-item" data-emoji="🕉️">🕉️</span>
+                        <span class="emoji-item" data-emoji="☸️">☸️</span>
+                        <span class="emoji-item" data-emoji="🎓">🎓</span>
+                        <span class="emoji-item" data-emoji="🏆">🏆</span>
+                        <span class="emoji-item" data-emoji="🥇">🥇</span>
+                        <span class="emoji-item" data-emoji="🎖️">🎖️</span>
+                        <span class="emoji-item" data-emoji="⚰️">⚰️</span>
+                        <span class="emoji-item" data-emoji="🪦">🪦</span>
+                        <span class="emoji-item" data-emoji="🕊️">🕊️</span>
+                        <span class="emoji-item" data-emoji="🙏">🙏</span>
+                        <span class="emoji-item" data-emoji="😊">😊</span>
+                        <span class="emoji-item" data-emoji="😄">😄</span>
+                        <span class="emoji-item" data-emoji="😢">😢</span>
+                        <span class="emoji-item" data-emoji="😭">😭</span>
+                        <span class="emoji-item" data-emoji="🎵">🎵</span>
+                        <span class="emoji-item" data-emoji="🎶">🎶</span>
+                    </div>
+                </div>
+                <div class="toolbar-group">
+                    <button id="zoomInBtn" class="btn" title="Zoom In">
+                        🔍+ Zoom In
+                    </button>
+                    <button id="zoomOutBtn" class="btn" title="Zoom Out">
+                        🔍- Zoom Out
+                    </button>
+                    <button id="resetZoomBtn" class="btn" title="Reset Zoom">
+                        🔄 Reset
+                    </button>
+                </div>
+                <div class="toolbar-group">
+                    <button id="saveBtn" class="btn btn-success" title="Save Tree">
+                        💾 Save
+                    </button>
+                    <button id="deleteBtn" class="btn btn-danger" title="Delete Tree">
+                        🗑️ Delete
+                    </button>
+                </div>
+                <div class="toolbar-info">
+                    <span id="currentTreeName">No tree selected</span>
+                    <span id="saveStatus" class="save-status"></span>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div id="canvasContainer" class="canvas-container">
+                <div id="canvas"></div>
+                <div id="noTreeMessage" class="no-tree-message">
+                    <h2>Welcome to Family Tree Builder</h2>
+                    <p>Create a new tree or select an existing one to get started.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: Properties Editor -->
+        <aside class="properties-panel">
+            <h3>Properties</h3>
+            <div id="propertiesContent">
+                <p class="no-selection">Select an item to edit its properties</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hidden file input for photo upload -->
+    <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

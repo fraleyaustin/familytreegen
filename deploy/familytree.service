@@ -1,0 +1,24 @@
+[Unit]
+Description=Family Tree Builder Gunicorn Server
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/FamilyTree/backend
+Environment="PATH=/path/to/FamilyTree/venv/bin"
+ExecStart=/path/to/FamilyTree/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --access-logfile /var/log/familytree/access.log \
+    --error-logfile /var/log/familytree/error.log \
+    wsgi:app
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
